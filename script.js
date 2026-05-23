@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const verseTextEl = document.getElementById("verse-text");
     const verseRefEl = document.getElementById("verse-ref");
     const dateEl = document.getElementById("current-date");
+    const shuffleBtn = document.getElementById("shuffle-btn");
     const copyBtn = document.getElementById("copy-btn");
     const saveImgBtn = document.getElementById("save-img-btn");
     const toast = document.getElementById("toast");
@@ -72,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const text = verse.text.trim();
                 const textLower = text.toLowerCase();
 
-                // Standar penyaringan ayat
                 const isGoodLength = text.length > 60 && text.length < 230;
                 const isStandalone = !avoidStartWords.some(word => textLower.startsWith(word + " "));
                 const isFinishedSentence = !text.endsWith(",") && !text.endsWith(";") && !text.endsWith(":");
@@ -102,7 +102,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- FITUR 1: SALIN AYAT ---
+    // --- FITUR BARU: ACAK ULANG AYAT ---
+    shuffleBtn.addEventListener("click", () => {
+        // Efek animasi ikon putar
+        const icon = shuffleBtn.querySelector('i');
+        icon.classList.add('spin');
+        setTimeout(() => icon.classList.remove('spin'), 500);
+
+        // Ubah teks sementara saat sedang diproses
+        verseTextEl.textContent = "Mengacak ayat baru...";
+        verseRefEl.textContent = "";
+
+        // Panggil fungsi undi ulang
+        fetchNewDailyVerse(todayKey);
+    });
+
+    // --- FITUR: SALIN AYAT ---
     copyBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
         
@@ -116,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // --- FITUR 2: SIMPAN SEBAGAI GAMBAR ---
+    // --- FITUR: SIMPAN SEBAGAI GAMBAR ---
     saveImgBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
 
@@ -125,48 +140,41 @@ document.addEventListener("DOMContentLoaded", () => {
         canvas.height = 1080;
         const ctx = canvas.getContext("2d");
 
-        // 1. Gambar Background Gradient Mewah
         const gradient = ctx.createLinearGradient(0, 0, 1080, 1080);
         gradient.addColorStop(0, '#4e54c8');
         gradient.addColorStop(1, '#8f94fb');
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 1080, 1080);
 
-        // 2. Gambar Bingkai Tipis Elegan
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 15;
         ctx.strokeRect(50, 50, 980, 980);
 
-        // 3. Tanda Kutip sebagai Watermark Transparan di Belakang Teks
         ctx.font = '500px Georgia';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('“', 540, 600);
 
-        // --- PENYESUAIAN TANGGAL UNTUK JUDUL ---
         const dateObj = new Date();
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const dayName = days[dateObj.getDay()];
         const dd = String(dateObj.getDate()).padStart(2, '0');
         const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const yy = String(dateObj.getFullYear()).slice(-2); // Ambil 2 digit tahun
-        const yyyy = dateObj.getFullYear(); // Untuk kebutuhan nama file
+        const yy = String(dateObj.getFullYear()).slice(-2);
+        const yyyy = dateObj.getFullYear();
         
         const dynamicTitle = `Nats ${dayName}, ${dd}-${mm}-${yy}`;
 
-        // 4. Gambar Judul Atas (Dinamis)
         ctx.font = 'bold 32px sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.textBaseline = 'top';
         ctx.fillText(dynamicTitle, 540, 120);
 
-        // Garis pemanis di bawah judul (Lebar dihitung otomatis sesuai panjang judul)
         const titleWidth = ctx.measureText(dynamicTitle).width;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.fillRect(540 - (titleWidth / 2), 175, titleWidth, 4);
 
-        // 5. Algoritma Pembungkus Teks Otomatis (Word-Wrap)
         ctx.font = 'italic 40px Georgia'; 
         ctx.fillStyle = '#ffffff';
         ctx.textBaseline = 'middle';
@@ -189,29 +197,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         lines.push(currentLine.trim());
 
-        // Hitung Y awal agar teks berada tepat di tengah sisa ruang
         const totalTextHeight = lines.length * lineHeight;
         let startY = 540 - (totalTextHeight / 2);
-        if (startY < 260) startY = 260; // Batas aman atas
+        if (startY < 260) startY = 260;
 
-        // Tulis baris demi baris ayat ke canvas
         for (let i = 0; i < lines.length; i++) {
             ctx.fillText(lines[i], 540, startY);
             startY += lineHeight;
         }
 
-        // 6. Gambar Kitab & Pasal
         const refY = startY + 40; 
         ctx.font = 'bold 34px sans-serif';
         ctx.fillStyle = '#ffe066'; 
         ctx.fillText(`— ${activeVerseRef} —`, 540, refY);
 
-        // 7. Format Nama File (Nats_DD-MM-YYYY_Kitab-Pasal-Ayat.png)
         const formattedDate = `${dd}-${mm}-${yyyy}`;
         const formattedRef = activeVerseRef.replace(/[: ]/g, '-');
         const finalFileName = `Nats_${formattedDate}_${formattedRef}.png`;
 
-        // 8. Proses Unduh Gambar
         const link = document.createElement('a');
         link.download = finalFileName;
         link.href = canvas.toDataURL('image/png');
