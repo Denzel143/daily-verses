@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayat Nats Harian</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="card-container">
+        <div class="card">
+            <h2 class="title">✨ Nats Hari Ini ✨</h2>
+            <div class="date" id="current-date">Memuat tanggal...</div>
+            
+            <div class="verse-content">
+                <p id="verse-text">"Sedang mencari ayat terbaik untukmu hari ini..."</p>
+                <p id="verse-ref"></p>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="copy-btn" class="btn btn-secondary">
+                    <i class="fas fa-copy"></i> Salin Ayat
+                </button>
+                <button id="save-img-btn" class="btn btn-primary">
+                    <i class="fas fa-image"></i> Simpan Gambar
+                </button>
+            </div>
+            
+            <div id="toast" class="toast">📋 Ayat berhasil disalin!</div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
