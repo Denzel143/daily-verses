@@ -81,20 +81,21 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* Area Tombol */
+/* Area Tombol - Disesuaikan agar 3 tombol muat rapi */
 .action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 10px;
     justify-content: center;
+    flex-wrap: wrap; /* Jika layar sangat kecil, tombol akan turun ke bawah dengan rapi */
 }
 
 .btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
+    gap: 6px;
+    padding: 10px 18px;
     border-radius: 50px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -125,6 +126,15 @@ body {
 
 .btn:active {
     transform: translateY(0);
+}
+
+/* Animasi Putar untuk Ikon Acak */
+.fa-sync-alt.spin {
+    animation: spin 0.5s ease-in-out;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
 }
 
 /* Notifikasi Pop-up (Toast) */
