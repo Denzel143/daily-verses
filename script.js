@@ -1,6 +1,13 @@
+// ==========================================
+// MASUKKAN API KEY GROQ KAMU DI SINI
+const GROQ_API_KEY = "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";
+// ==========================================
+
 document.addEventListener("DOMContentLoaded", () => {
     const verseTextEl = document.getElementById("verse-text");
     const verseRefEl = document.getElementById("verse-ref");
+    const meaningEl = document.getElementById("verse-meaning");
+    const dividerEl = document.getElementById("divider");
     const dateEl = document.getElementById("current-date");
     const shuffleBtn = document.getElementById("shuffle-btn");
     const copyBtn = document.getElementById("copy-btn");
@@ -10,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let activeVerseText = "";
     let activeVerseRef = "";
 
-    // Set tanggal harian lokal
     const todayStr = new Date().toLocaleDateString('id-ID', { 
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
     });
@@ -22,9 +28,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedDate = localStorage.getItem("ayatHarianTanggal");
     const savedVerse = localStorage.getItem("ayatHarianTeks");
     const savedRef = localStorage.getItem("ayatHarianRef");
+    const savedMeaning = localStorage.getItem("ayatHarianMakna");
 
     if (savedDate === todayKey && savedVerse && savedRef) {
         displayVerse(savedVerse, savedRef);
+        // Jika makna juga sudah tersimpan untuk hari ini, langsung tampilkan
+        if (savedMeaning) {
+            displayMeaning(savedMeaning);
+        } else {
+            // Jaga-jaga jika ayat ada tapi maknanya terhapus/belum termuat
+            fetchVerseMeaning(savedVerse, savedRef);
+        }
     } else {
         fetchNewDailyVerse(todayKey);
     }
@@ -34,6 +48,71 @@ document.addEventListener("DOMContentLoaded", () => {
         activeVerseRef = reference;
         verseTextEl.textContent = `"${text}"`;
         verseRefEl.textContent = `- ${reference} -`;
+        
+        // Reset tampilan makna jika ayat berganti
+        dividerEl.style.display = "none";
+        meaningEl.style.display = "none";
+        meaningEl.classList.remove("loading");
+    }
+
+    function displayMeaning(meaning) {
+        dividerEl.style.display = "block";
+        meaningEl.style.display = "block";
+        meaningEl.classList.remove("loading");
+        // Kita bold kata-kata awalnya agar bagus
+        meaningEl.innerHTML = `<strong>💡 Makna:</strong> ${meaning}`;
+    }
+
+    // --- FUNGSI MENGAMBIL MAKNA DARI AI GROQ ---
+    async function fetchVerseMeaning(verse, reference) {
+        if (!GROQ_API_KEY || GROQ_API_KEY === "MASUKKAN_API_KEY_GROQ_DI_SINI") {
+            console.error("API Key Groq belum dimasukkan!");
+            return;
+        }
+
+        dividerEl.style.display = "block";
+        meaningEl.style.display = "block";
+        meaningEl.classList.add("loading");
+        meaningEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI sedang menggali makna ayat...`;
+
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "Kamu adalah pembimbing rohani yang bijaksana. Berikan renungan atau makna singkat, padat, dan menguatkan (maksimal 3-4 kalimat) dari ayat Alkitab yang diberikan. Gunakan bahasa Indonesia yang hangat, bersahabat, dan mudah dipahami."
+                        },
+                        {
+                            role: "user",
+                            content: `Tolong jelaskan makna dari ayat ini: "${verse}" - ${reference}`
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 250
+                })
+            });
+
+            if (!response.ok) throw new Error("Gagal mengambil respon dari Groq");
+
+            const data = await response.json();
+            const meaning = data.choices[0].message.content.trim();
+
+            // Simpan ke localStorage & Tampilkan
+            localStorage.setItem("ayatHarianMakna", meaning);
+            displayMeaning(meaning);
+
+        } catch (error) {
+            console.error(error);
+            meaningEl.classList.remove("loading");
+            meaningEl.innerHTML = "<em>(Gagal memuat makna dari AI. Periksa koneksi atau API Key Anda.)</em>";
+        }
     }
 
     async function fetchNewDailyVerse(dateKey) {
@@ -43,7 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const db = await response.json();
 
             const allBooks = [...(db.PL || []), ...(db.PB || [])];
-
             const recommendedBooks = [
                 "Mazmur", "Amsal", "Pengkhotbah", "Yesaya", "Yeremia", "Ratapan", 
                 "Matius", "Markus", "Lukas", "Yohanes", "Roma", "1 Korintus", "2 Korintus", 
@@ -51,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 "1 Timotius", "2 Timotius", "Titus", "Ibrani", "Yakobus", "1 Petrus", 
                 "2 Petrus", "1 Yohanes", "Yudas", "Wahyu"
             ];
-
             const avoidStartWords = ["dan", "lalu", "kemudian", "maka", "tetapi", "adapun", "sebab itu", "karena itu", "ketika", "pada waktu"];
 
             let validVerseFound = false;
@@ -61,7 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             while (!validVerseFound && attempts < 200) {
                 attempts++;
-                
                 const randomBookName = recommendedBooks[Math.floor(Math.random() * recommendedBooks.length)];
                 const book = allBooks.find(b => b.name === randomBookName);
                 if (!book) continue;
@@ -89,11 +165,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 selectedRef = "Yeremia 29:11";
             }
 
+            // Hapus makna lama karena ayatnya baru
+            localStorage.removeItem("ayatHarianMakna");
+            
             localStorage.setItem("ayatHarianTanggal", dateKey);
             localStorage.setItem("ayatHarianTeks", selectedVerse);
             localStorage.setItem("ayatHarianRef", selectedRef);
 
             displayVerse(selectedVerse, selectedRef);
+            
+            // Panggil AI untuk menggali makna dari ayat yang baru diundi
+            fetchVerseMeaning(selectedVerse, selectedRef);
 
         } catch (error) {
             console.error(error);
@@ -102,26 +184,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- FITUR BARU: ACAK ULANG AYAT ---
+    // --- ACAK ULANG AYAT ---
     shuffleBtn.addEventListener("click", () => {
-        // Efek animasi ikon putar
         const icon = shuffleBtn.querySelector('i');
         icon.classList.add('spin');
         setTimeout(() => icon.classList.remove('spin'), 500);
 
-        // Ubah teks sementara saat sedang diproses
         verseTextEl.textContent = "Mengacak ayat baru...";
         verseRefEl.textContent = "";
+        
+        // Sembunyikan area makna saat mengacak
+        dividerEl.style.display = "none";
+        meaningEl.style.display = "none";
 
-        // Panggil fungsi undi ulang
         fetchNewDailyVerse(todayKey);
     });
 
-    // --- FITUR: SALIN AYAT ---
+    // --- SALIN AYAT (Sekarang ikut menyalin maknanya) ---
     copyBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
         
-        const textToCopy = `"${activeVerseText}"\n\n— ${activeVerseRef}`;
+        let textToCopy = `"${activeVerseText}"\n— ${activeVerseRef}`;
+        
+        const savedMeaning = localStorage.getItem("ayatHarianMakna");
+        if (savedMeaning) {
+            textToCopy += `\n\nMakna:\n${savedMeaning}`;
+        }
         
         navigator.clipboard.writeText(textToCopy).then(() => {
             toast.classList.add("show");
@@ -131,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // --- FITUR: SIMPAN SEBAGAI GAMBAR ---
+    // --- SIMPAN SEBAGAI GAMBAR (Tetap hanya Ayat saja agar desain rapi) ---
     saveImgBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
 
