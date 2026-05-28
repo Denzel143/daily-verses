@@ -1,6 +1,6 @@
 // ==========================================
 // MASUKKAN API KEY GROQ KAMU DI SINI
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "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";
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
