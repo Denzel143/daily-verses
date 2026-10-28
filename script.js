@@ -1,8 +1,3 @@
-// ==========================================
-// MASUKKAN API KEY GROQ KAMU DI SINI
-const GROQ_API_KEY = "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";
-// ==========================================
-
 document.addEventListener("DOMContentLoaded", () => {
     const verseTextEl = document.getElementById("verse-text");
     const verseRefEl = document.getElementById("verse-ref");
@@ -63,43 +58,24 @@ document.addEventListener("DOMContentLoaded", () => {
         meaningEl.innerHTML = `<strong>💡 Makna:</strong> ${meaning}`;
     }
 
-    // --- FUNGSI MENGAMBIL MAKNA DARI AI GROQ ---
+    // --- FUNGSI MENGAMBIL MAKNA DARI BACKEND LOKAL ---
     async function fetchVerseMeaning(verse, reference) {
-        if (!GROQ_API_KEY || GROQ_API_KEY === "MASUKKAN_API_KEY_GROQ_DI_SINI") {
-            console.error("API Key Groq belum dimasukkan!");
-            return;
-        }
-
         dividerEl.style.display = "block";
         meaningEl.style.display = "block";
         meaningEl.classList.add("loading");
         meaningEl.innerHTML = `<i class="fas fa-spinner fa-spin"></i> AI sedang menggali makna ayat...`;
 
         try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            // Memanggil endpoint serverless API kita
+            const response = await fetch("/api/api", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${GROQ_API_KEY}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: [
-                        {
-                            role: "system",
-                            content: "Kamu adalah pembimbing rohani yang bijaksana. Berikan renungan atau makna singkat, padat, dan menguatkan (maksimal 3-4 kalimat) dari ayat Alkitab yang diberikan. Gunakan bahasa Indonesia yang hangat, bersahabat, dan mudah dipahami."
-                        },
-                        {
-                            role: "user",
-                            content: `Tolong jelaskan makna dari ayat ini: "${verse}" - ${reference}`
-                        }
-                    ],
-                    temperature: 0.7,
-                    max_tokens: 250
-                })
+                body: JSON.stringify({ verse, reference })
             });
 
-            if (!response.ok) throw new Error("Gagal mengambil respon dari Groq");
+            if (!response.ok) throw new Error("Gagal mengambil respon dari server lokal");
 
             const data = await response.json();
             const meaning = data.choices[0].message.content.trim();
@@ -111,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error(error);
             meaningEl.classList.remove("loading");
-            meaningEl.innerHTML = "<em>(Gagal memuat makna dari AI. Periksa koneksi atau API Key Anda.)</em>";
+            meaningEl.innerHTML = "<em>(Gagal memuat makna dari AI. Periksa koneksi internet Anda atau status server.)</em>";
         }
     }
 
@@ -200,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetchNewDailyVerse(todayKey);
     });
 
-    // --- SALIN AYAT (Sekarang ikut menyalin maknanya) ---
+    // --- SALIN AYAT ---
     copyBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
         
@@ -219,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // --- SIMPAN SEBAGAI GAMBAR (Tetap hanya Ayat saja agar desain rapi) ---
+    // --- SIMPAN SEBAGAI GAMBAR ---
     saveImgBtn.addEventListener("click", () => {
         if (!activeVerseText) return;
 
