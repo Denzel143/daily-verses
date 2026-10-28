@@ -1,6 +1,7 @@
 // api/api.js
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
+    // Hanya menerima method POST
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
@@ -9,16 +10,13 @@ export default async function handler(req, res) {
     const apiKey = process.env.API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'API_KEY tidak ditemukan di server' });
+        return res.status(500).json({ error: 'API_KEY tidak ditemukan di environment variables' });
     }
 
     try {
-        // Menggunakan model Gemini Flash yang cepat dan ringan. 
-        // Google merekomendasikan 'gemini-1.5-flash' atau 'gemini-1.5-flash-8b' untuk kebutuhan lite/cepat.
         const model = "gemini-1.5-flash"; 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-        // Request body khusus format Gemini
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -47,19 +45,16 @@ export default async function handler(req, res) {
         if (!response.ok) {
             const errorData = await response.json();
             console.error("Gemini API Error:", errorData);
-            throw new Error(`Gemini merespon dengan status ${response.status}`);
+            throw new Error(`Gemini API Error: ${response.status}`);
         }
 
         const data = await response.json();
-        
-        // PARSER GEMINI: Mengambil teks dari struktur JSON Gemini
         const meaning = data.candidates[0].content.parts[0].text.trim();
         
-        // Mengirimkan teks bersih ke frontend
         res.status(200).json({ meaning });
 
     } catch (error) {
         console.error("API Error:", error);
         res.status(500).json({ error: 'Gagal mengambil makna dari AI Gemini' });
     }
-}
+};
