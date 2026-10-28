@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
         meaningEl.innerHTML = `<strong>💡 Makna:</strong> ${meaning}`;
     }
 
-    // --- FUNGSI MENGAMBIL MAKNA DARI BACKEND LOKAL ---
+// --- FUNGSI MENGAMBIL MAKNA DARI BACKEND LOKAL ---
     async function fetchVerseMeaning(verse, reference) {
         dividerEl.style.display = "block";
         meaningEl.style.display = "block";
@@ -78,7 +78,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!response.ok) throw new Error("Gagal mengambil respon dari server lokal");
 
             const data = await response.json();
-            const meaning = data.choices[0].message.content.trim();
+            
+            // KARENA SUDAH DIPARSING DI BACKEND, FRONTEND TINGGAL AMBIL '.meaning'
+            const meaning = data.meaning; 
 
             // Simpan ke localStorage & Tampilkan
             localStorage.setItem("ayatHarianMakna", meaning);
